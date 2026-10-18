@@ -1,0 +1,15 @@
+{
+  "name": "add two digits in Calculator",
+  "vars": {"a": "7", "b": "5", "sum": "12"},
+  "steps": [
+    {"do": "launch", "command": "calc.exe", "monitor": 2, "corner": "bottom-right", "as": "calc"},
+    {"do": "wait", "window": "${calc}", "target": "id=num7Button", "timeout": 20},
+    {"do": "invoke", "window": "${calc}", "target": "id=clearButton"},
+    {"do": "invoke", "window": "${calc}", "target": "id=num${a}Button"},
+    {"do": "invoke", "window": "${calc}", "target": "id=plusButton"},
+    {"do": "invoke", "window": "${calc}", "target": "id=num${b}Button"},
+    {"do": "invoke", "window": "${calc}", "target": "id=equalButton"},
+    {"do": "check", "window": "${calc}", "target": "id=CalculatorResults", "matches": " ${sum}'$"}
+  ],
+  "finally": [{"do": "close", "window": "${calc}"}]
+}
