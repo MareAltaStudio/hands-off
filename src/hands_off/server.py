@@ -198,6 +198,11 @@ def _give_focus_back(prev: int) -> bool:
             user32.AttachThreadInput(t_me, t_now, True)
         try:
             user32.SetForegroundWindow(prev)
+            if user32.GetForegroundWindow() != prev:
+                # The foreground lock refuses SetForegroundWindow now and then
+                # while a freshly launched app is still activating (~1 launch
+                # in 7 of Calculator); SwitchToThisWindow is not subject to it.
+                user32.SwitchToThisWindow(prev, True)
         finally:
             if t_now:
                 user32.AttachThreadInput(t_me, t_now, False)
@@ -212,17 +217,28 @@ def _guard_focus(prev: int, target_pids: set[int], watch_s: float = 0.9) -> str:
     """Watch the foreground for a moment after an action. Only a steal by the
     TARGET program is undone - if the user switched windows themselves, their
     choice stands."""
-    stolen, failed = False, False
+    stolen = False
     end = time.time() + watch_s
     while time.time() < end:
         now = user32.GetForegroundWindow()
         if now and now != prev and _pid_of(now) in target_pids:
             stolen = True
-            failed = not _give_focus_back(prev)
+            _give_focus_back(prev)
         time.sleep(0.02)
     if not stolen:
         return ""
-    if failed:
+    # Judge by where the focus ended, not by the first attempt that lost a
+    # race; an app still activating can refuse for a while, so keep trying.
+    deadline = time.time() + 2.0
+    while time.time() < deadline:
+        now = user32.GetForegroundWindow()
+        if not (now and now != prev and _pid_of(now) in target_pids):
+            break
+        if _give_focus_back(prev):
+            break
+        time.sleep(0.1)
+    now = user32.GetForegroundWindow()
+    if now and now != prev and _pid_of(now) in target_pids:
         now = user32.GetForegroundWindow()
         who = f"{win32gui.GetWindowText(now)[:50]!r} ({win32gui.GetClassName(now)})" if now else "nobody"
         return f"the program stole the focus and I could NOT give it back; focus is now on {who} - tell the user"
