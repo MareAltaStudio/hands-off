@@ -1,61 +1,112 @@
+<div align="center">
+
 # hands-off
 
 **Your AI agent uses your Windows programs while you keep using your PC.**
 
-An MCP server that lets Claude (or any MCP client) click buttons, fill in fields, pick menu items and read what's on
-screen in desktop programs **without moving your mouse, typing on your keyboard or stealing the window you're in**.
+An MCP server that clicks buttons, fills in fields, picks menu items and reads the screen in desktop programs<br>
+**without moving your mouse, typing on your keyboard or stealing the window you're in.**
 
-## Why
+[![CI](https://github.com/MareAltaStudio/hands-off/actions/workflows/ci.yml/badge.svg)](https://github.com/MareAltaStudio/hands-off/actions/workflows/ci.yml)
+![Windows 10 | 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4)
+![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB)
+![MCP](https://img.shields.io/badge/MCP-server-6E56CF)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-Most desktop automation for agents works through synthetic input: SendInput, pyautogui, AutoHotkey. Windows has one
-cursor and one foreground window per session, so while the agent works, you can't. Every "save this", "confirm that
-dialog", "export the file" means taking your hands off the mouse and waiting.
+[Quick start](#quick-start) · [How it works](docs/how-it-works.md) · [Tools](docs/tools.md) · [Recipes](docs/recipes.md) · [Compatibility](docs/compatibility.md)
 
-hands-off never calls SendInput and never moves the cursor. It works in layers, and every answer says which one did
-the job:
+</div>
 
-1. **UI Automation patterns** (Invoke, Toggle, Value, ExpandCollapse, SelectionItem, LegacyIAccessible): controls
-   found by name, on a window that can be covered or on another monitor.
-2. **Window messages** (BM_CLICK, WM_SETTEXT, WM_COMMAND, mouse and key messages posted to the window): no cursor
-   involved.
-3. **Nothing else.** If a program only reads the real mouse, the tool says so instead of quietly grabbing your
-   cursor.
+<!-- DEMO: docs/media/demo.mp4 (or .gif) goes here once recorded -->
 
-On top of that:
+---
 
-- **Focus guard.** Modern apps (WinUI/UWP) grab the foreground when you press their buttons. After every action
-  hands-off watches the foreground and hands it back to where you were, in 11-79 ms in our measurements. It only
-  undoes a steal by the *target* program, so it never fights you switching windows.
-- **Capture of covered windows.** PrintWindow with `PW_RENDERFULLCONTENT`, which also works for GPU-rendered windows,
-  with Windows Graphics Capture as the fallback.
-- **An action log** of every acting call, at `%LOCALAPPDATA%\hands-off\actions.log`.
+## The problem
+
+Desktop automation for agents usually works through synthetic input: `SendInput`, pyautogui, AutoHotkey. Windows has
+**one cursor and one foreground window** per session, so while the agent works, you don't. Every "save this",
+"confirm that dialog", "export the file" means taking your hands off the mouse and waiting.
+
+## What hands-off does instead
+
+|  | Synthetic input | hands-off |
+|---|---|---|
+| Moves your cursor | yes | **never** |
+| Types into whatever window has focus | yes | **never** — messages go to the target window |
+| Needs the window in front | yes | **no** — covered, on another monitor, all fine |
+| Finds controls by | pixel coordinates | **name, type, AutomationId** |
+| Knows if it worked | no | **says which layer acted; `read`/`capture` to check** |
+| Steals focus | yes | **gives it back** when an app grabs it (11–79 ms measured) |
+
+It works in layers, and every answer names the one that did the job:
+
+1. **UI Automation patterns:** Invoke, Toggle, Value, ExpandCollapse, SelectionItem, LegacyIAccessible.
+2. **Window messages:** `BM_CLICK`, `WM_SETTEXT`, `WM_COMMAND`, mouse and key messages posted to the window.
+3. **Nothing else.** A program that only reads the physical mouse gets an honest "use its API", never a quiet
+   cursor grab.
+
+More in [How it works](docs/how-it-works.md).
+
+## Quick start
+
+Requires Windows 10/11 and [uv](https://docs.astral.sh/uv/) (or Python 3.10+ with pip).
+
+**Claude Code**
+
+```powershell
+claude mcp add -s user hands-off -- uvx --from git+https://github.com/MareAltaStudio/hands-off hands-off-mcp
+```
+
+**Claude Desktop, Cursor and other MCP clients**
+
+```json
+{
+  "mcpServers": {
+    "hands-off": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/MareAltaStudio/hands-off", "hands-off-mcp"]
+    }
+  }
+}
+```
+
+**Check it without a client**
+
+```powershell
+uvx --from git+https://github.com/MareAltaStudio/hands-off hands-off-mcp --selftest
+```
+
+Then ask your agent something like *"open Calculator on my second monitor and add 7 and 5 — don't touch my mouse."*
 
 ## Tools
 
-| Tool | What it does |
+| Read-only | |
 |---|---|
 | `list_windows` | open windows: number, program, monitor, title |
-| `tree` | the window's controls with paths, names, ids and what they accept |
-| `read` | a control's value, text, checked/expanded state, rectangle |
-| `capture` | a picture of the window (or one control), even when it's covered |
+| `tree` | a window's controls with paths, names, ids and what each accepts |
+| `read` | a control's value, text, state and rectangle |
+| `capture` | a picture of the window or one control, even when it's covered |
+
+| Acting | |
+|---|---|
 | `invoke` | click, toggle, select, expand or collapse a control by name |
 | `type_text` | replace a field's value |
-| `menu` | pick `File > Save As` (classic menus without opening anything on screen) |
+| `menu` | `File > Save As` (classic menus without opening anything on screen) |
 | `keys` | send keys by message (`enter`, `esc`, `f5`, `down`...) |
-| `click_xy` | click a point of the window without moving the cursor |
-| `move` | move a window to another monitor without focusing it |
-| `launch` | start a program without stealing focus, optionally on another monitor |
-| `close` | ask a window to close, like its X button |
+| `click_xy` | click a point without moving the cursor |
+| `move` | move a window to another monitor or corner, without focusing it |
+| `launch` | start a program without stealing focus |
+| `close` | close a window, like its X button |
+| `run_recipe` | run a whole recorded task in one call |
 
-| `run_recipe` | run a recipe: a whole task in one call (see below) |
-
-The first four are marked read-only (`readOnlyHint`), so a client can allow them without asking.
+Read-only tools carry `readOnlyHint`, so your client can allow them without asking. Full reference in
+[docs/tools.md](docs/tools.md).
 
 ## Recipes: explore once, then stop paying for it
 
-Driving a program click by click costs one agent turn per click. That's fine the first time, when the path is
-unknown, and wasteful every time after. So once the agent has figured out a task, it writes the path down as a
-**recipe**: the same tool calls as JSON, plus `wait`, `check`, `sleep` and `python` steps.
+Driving a program click by click costs one agent turn per click. Fine the first time, wasteful every time after. Once
+the agent has figured out a task, it freezes the path into a **recipe**: the same tool calls as JSON, plus `wait`,
+`check`, `sleep` and `python` steps.
 
 ```json
 {
@@ -74,63 +125,48 @@ unknown, and wasteful every time after. So once the agent has figured out a task
 }
 ```
 
-Run it in one MCP call (`run_recipe`) or with no agent at all:
-
 ```powershell
 hands-off-mcp run recipes/calculator_add.json a=9 b=4 sum=13
 ```
 
-It stops at the first error or failed `check` and reports which step and what it saw; `finally` cleans up either
-way. A `python` step can call a program's own API in the middle of the recipe, so the cheapest layer does each step.
-The agent only comes back when a recipe breaks.
+One MCP call (`run_recipe`), or no agent at all: a scheduler, a script, a build step. It stops at the first failed
+step or `check` and reports what it saw; `finally` cleans up either way. A `python` step can call a program's own
+API mid-recipe, so the cheapest layer does each step. The agent only comes back when a recipe breaks.
 
-## What works
-
-| Program | Result |
-|---|---|
-| Win32 / MFC | full tree, menus, fields, buttons |
-| WinUI (new Notepad), UWP (Calculator) | fields, buttons, menus; the focus guard handles their focus grabs |
-| Chrome / Edge / Electron | browser UI through the tree; the page through `click_xy`, which arrives as a trusted click |
-| Custom-drawn UIs (Godot, PureRef) | `capture` only |
-| Games, the Photoshop canvas, the Blender viewport | **no**: they read the real mouse. Use the program's own API |
-
-## Install
-
-Requires Windows 10/11 and Python 3.10+.
-
-```powershell
-claude mcp add -s user hands-off -- uvx --from git+https://github.com/MareAltaStudio/hands-off hands-off-mcp
-```
-
-Or from a clone:
-
-```powershell
-git clone https://github.com/MareAltaStudio/hands-off
-cd hands-off
-uv venv; uv pip install -e .
-claude mcp add -s user hands-off -- "$PWD\.venv\Scripts\hands-off-mcp.exe"
-```
-
-Any other MCP client: run `hands-off-mcp` (stdio).
-
-Check it without a client: `hands-off-mcp --selftest` lists your windows, walks one tree and takes one capture.
+More in [docs/recipes.md](docs/recipes.md).
 
 ## The skill
 
-The server gives the agent hands; [`skills/hands-off/SKILL.md`](skills/hands-off/SKILL.md) tells it how to use them:
+The server gives the agent hands; [`skills/hands-off/SKILL.md`](skills/hands-off/SKILL.md) teaches it how to use them:
 the order of choice (the program's API first, hands-off second, the real mouse only after asking), the
-list → tree → act → check loop, and the traps we measured. For Claude Code, copy the folder into
-`~/.claude/skills/`.
+list → tree → act → check loop, when to turn a task into a recipe, and the traps we measured.
 
-In our own use the server and the skill only work well together. The server alone lets the agent act; the skill
-keeps it from guessing.
+For Claude Code, copy the folder into `~/.claude/skills/`. In our use the two only shine together: the server lets
+the agent act, the skill keeps it from guessing.
+
+## What works
+
+| | |
+|---|---|
+| ✅ Win32 / MFC | full tree, menus, fields, buttons |
+| ✅ WinUI, UWP | fields, buttons, menus; the focus guard handles their focus grabs |
+| ✅ Chrome, Edge, Electron | browser UI through the tree; page content through `click_xy` (arrives as a trusted click) |
+| 🟡 Custom-drawn UIs (Godot, PureRef) | `capture` only |
+| ❌ Games, the Photoshop canvas, the Blender viewport | they read the physical mouse — use the program's API |
+
+Details and caveats in [docs/compatibility.md](docs/compatibility.md).
 
 ## Safety
 
-hands-off acts on your real programs with your user's rights. It can press "Delete", close a window or confirm a
-dialog. Leave the acting tools behind your client's permission prompt until you trust the flow, and read the action
-log when something surprises you.
+hands-off acts on your real programs with your rights. It can press "Delete", confirm a dialog or close unsaved work.
+Keep the acting tools behind your client's permission prompt until you trust the flow, run only recipes you've read,
+and check `%LOCALAPPDATA%\hands-off\actions.log` when something surprises you. See [SECURITY.md](SECURITY.md).
+
+## Contributing
+
+Compatibility reports, traps and example recipes are the most useful contributions. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT
+[MIT](LICENSE) © 2026 Mare Alta

@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv pip install -e ".[dev]"
+      - run: uv run --no-sync ruff check src tests
+      - run: uv run --no-sync pytest -q

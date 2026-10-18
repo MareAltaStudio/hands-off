@@ -961,7 +961,8 @@ def menu(window: str, path: str) -> str:
                 continue
             if c.GetInvokePattern():
                 if _invoke_bounded(c) == "pending":
-                    return f"menu {' > '.join(steps)} (UIA Invoke) - it opened something that is still waiting; see list_windows()."
+                    return (f"menu {' > '.join(steps)} (UIA Invoke) - it opened something that is "
+                            f"still waiting; see list_windows().")
                 return f"menu {' > '.join(steps)} (UIA Invoke)"
             if ec:
                 ec.Expand(waitTime=0)

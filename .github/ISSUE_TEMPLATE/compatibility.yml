@@ -1,0 +1,26 @@
+name: Compatibility report
+description: You drove a program with hands-off (or couldn't) - tell us what worked
+labels: [compatibility]
+body:
+  - type: input
+    id: program
+    attributes:
+      label: Program and version
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of UI (if you know)
+      options: [Win32 / MFC, WinForms, WPF, WinUI / UWP, Qt, Chromium / Electron, Java, Custom-drawn, Don't know]
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked
+      description: Which tools, which targets (id=, Type:Name), which layer the answer named.
+    validations:
+      required: true
+  - type: textarea
+    id: failed
+    attributes:
+      label: What didn't

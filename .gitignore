@@ -5,3 +5,5 @@ dist/
 build/
 *.egg-info/
 uv.lock
+.pytest_cache/
+.ruff_cache/
