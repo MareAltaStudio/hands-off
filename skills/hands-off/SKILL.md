@@ -87,6 +87,16 @@ Example: [`recipes/calculator_add.json`](../../recipes/calculator_add.json).
   messages go first, because UIA `Value`/`Select`/`Toggle` focus the control. The guard still watches the foreground
   for 0.9 s as a backstop and only pulls focus back when the TARGET program took it. If an answer says
   `could NOT give it back`, tell the user (the message says who has the focus now).
+- **A program that is starting can take the focus.** `launch` creates it through WMI, whose parent has no right to
+  the foreground (with a person using the PC: 2 of 18 launches took the focus, against 12 of 20 as a plain child;
+  both were Calculator, a UWP app the system activates itself). Documents open with their associated program, not
+  through `cmd start`. A program started this way gets the user's default environment, not the server's: if it
+  needs a variable the server has, pass it in `arguments`.
+- **`id=` can repeat down a Win32 wrapper chain.** In the Open/Save dialog `id=1148` is the ComboBoxEx, its
+  ComboBox and the Edit; hands-off picks the deepest that can act and says so. If text still lands in the wrong
+  place, target the `#path` from `tree()`.
+- **A test that closes windows closes only its own.** Other programs, and other agents, open windows while you
+  work: match by the process you started (exe or pid), never by "any new window".
 - The foreground passes through "no window" during the switch: checking on the very next line gives a false
   "failed". That is why the guard retries every 30 ms instead of checking once.
 - **Capture**: PrintWindow **with** `PW_RENDERFULLCONTENT` takes covered windows, GPU-rendered ones included. The
