@@ -6,7 +6,27 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-### Changed
+## [0.1.0] - 2026-10-27
+
+First public release.
+
+### Added
+- Demo video and every script that made it (`demo/`): one take, a script moving the real cursor in Blender on
+  one monitor while Claude reads the Blender manual through hands-off on the other.
+- MCP server with 12 tools: `list_windows`, `tree`, `read`, `capture` (read-only) and `invoke`, `type_text`,
+  `keys`, `click_xy`, `menu`, `move`, `launch`, `close`.
+- UI Automation first, window messages second, never synthetic input.
+- Focus guard that hands the foreground back when the target program takes it, judging by the final state and
+  falling back to `SwitchToThisWindow` when `SetForegroundWindow` is refused.
+- Capture of covered and GPU-rendered windows (`PrintWindow` with `PW_RENDERFULLCONTENT`, Windows Graphics
+  Capture fallback).
+- Recipes: tasks frozen as JSON (`wait`, `check`, `sleep`, `python` steps, variables, `finally`), run through
+  `run_recipe` or `hands-off-mcp run`.
+- `corner` option on `move` and `launch`.
+- Agent skill (`skills/hands-off/SKILL.md`).
+- Action log at `%LOCALAPPDATA%\hands-off\actions.log`.
+
+### Focus
 - Acting tools no longer let the target take the focus. The target's window carries `WS_EX_NOACTIVATE` for the length
   of the action (`HANDS_OFF_NOACTIVATE=0` turns it off). Calculator, six presses: 35 of 147 samples off the user's
   window before, 0 of 146 after.
@@ -23,19 +43,3 @@ All notable changes to this project are documented here. The format follows
 - Measured focus behaviour on `launch` (docs/compatibility.md#focus-on-launch); the README no longer implies
   the guard always wins there.
 - Typing into a web page: wait before judging with `capture`.
-
-## [0.1.0] - 2026-10-18
-
-### Added
-- MCP server with 12 tools: `list_windows`, `tree`, `read`, `capture` (read-only) and `invoke`, `type_text`,
-  `keys`, `click_xy`, `menu`, `move`, `launch`, `close`.
-- UI Automation first, window messages second, never synthetic input.
-- Focus guard that hands the foreground back when the target program takes it, judging by the final state and
-  falling back to `SwitchToThisWindow` when `SetForegroundWindow` is refused.
-- Capture of covered and GPU-rendered windows (`PrintWindow` with `PW_RENDERFULLCONTENT`, Windows Graphics
-  Capture fallback).
-- Recipes: tasks frozen as JSON (`wait`, `check`, `sleep`, `python` steps, variables, `finally`), run through
-  `run_recipe` or `hands-off-mcp run`.
-- `corner` option on `move` and `launch`.
-- Agent skill (`skills/hands-off/SKILL.md`).
-- Action log at `%LOCALAPPDATA%\hands-off\actions.log`.

@@ -1,0 +1,33 @@
+{
+  "name": "demo video: drive Mouse Properties and Character Map while the user draws",
+  "note": "Mouse Properties: only switch tabs, never tick a box ('Switch primary and secondary buttons' applies at once); the window is cancelled at the end.",
+  "vars": {"mouse": "Mouse Properties", "charmap": "exe:charmap.exe"},
+  "steps": [
+    {"do": "invoke", "window": "${mouse}", "target": "TabItem:Pointers", "action": "select"},
+    {"do": "sleep", "s": 1.4},
+    {"do": "invoke", "window": "${mouse}", "target": "TabItem:Pointer Options", "action": "select"},
+    {"do": "sleep", "s": 1.4},
+    {"do": "invoke", "window": "${mouse}", "target": "TabItem:Wheel", "action": "select"},
+    {"do": "sleep", "s": 1.4},
+    {"do": "invoke", "window": "${mouse}", "target": "TabItem:Buttons", "action": "select"},
+    {"do": "sleep", "s": 1.2},
+    {"do": "type_text", "window": "${charmap}", "target": "id=104", "text": "hands"},
+    {"do": "sleep", "s": 0.7},
+    {"do": "type_text", "window": "${charmap}", "target": "id=104", "text": "hands-off:"},
+    {"do": "sleep", "s": 0.7},
+    {"do": "type_text", "window": "${charmap}", "target": "id=104", "text": "hands-off: your mouse"},
+    {"do": "sleep", "s": 0.7},
+    {"do": "type_text", "window": "${charmap}", "target": "id=104", "text": "hands-off: your mouse stays yours"},
+    {"do": "check", "window": "${charmap}", "target": "id=104", "contains": "your mouse stays yours"},
+    {"do": "sleep", "s": 1.2},
+    {"do": "invoke", "window": "${charmap}", "target": "id=119", "action": "toggle"},
+    {"do": "sleep", "s": 2.0},
+    {"do": "invoke", "window": "${charmap}", "target": "id=119", "action": "toggle"},
+    {"do": "sleep", "s": 1.0},
+    {"do": "invoke", "window": "${mouse}", "target": "TabItem:Pointer Options", "action": "select"},
+    {"do": "sleep", "s": 1.4},
+    {"do": "invoke", "window": "${mouse}", "target": "TabItem:Buttons", "action": "select"},
+    {"do": "sleep", "s": 1.0},
+    {"do": "invoke", "window": "${mouse}", "target": "id=2"}
+  ]
+}

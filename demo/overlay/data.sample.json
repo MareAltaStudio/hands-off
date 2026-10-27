@@ -1,0 +1,20 @@
+{
+  "focus_log": [
+    {"t": 0.0, "fg_title": "Untitled - Paint", "fg_is_paint": true},
+    {"t": 5.0, "fg_title": "Untitled - Paint", "fg_is_paint": true},
+    {"t": 10.0, "fg_title": "Untitled - Paint", "fg_is_paint": true},
+    {"t": 15.0, "fg_title": "Untitled - Paint", "fg_is_paint": true},
+    {"t": 20.0, "fg_title": "Untitled - Paint", "fg_is_paint": true},
+    {"t": 25.0, "fg_title": "Untitled - Paint", "fg_is_paint": true}
+  ],
+  "ticker": [
+    {"t": 2.1, "text": "launch Calculator · calc.exe · process start"},
+    {"t": 4.2, "text": "invoke Calculator · num7Button · UIA Invoke"},
+    {"t": 6.0, "text": "invoke Calculator · plusButton · UIA Invoke"},
+    {"t": 8.3, "text": "invoke Calculator · num5Button · UIA Invoke"},
+    {"t": 11.0, "text": "read Calculator · CalculatorResults · UIA Value"},
+    {"t": 14.5, "text": "type Notepad · Text editor · WM_CHAR (no focus)"},
+    {"t": 18.0, "text": "type Notepad · Text editor · WM_CHAR (no focus)"},
+    {"t": 22.4, "text": "read Notepad · Text editor · UIA Value"}
+  ]
+}

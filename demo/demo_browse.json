@@ -1,0 +1,63 @@
+{
+  "name": "demo video: read the Blender manual while the user models",
+  "note": "Coordinates for a guest Chrome window maximised on a 1920x1080 monitor, starting at the Subdivision Surface page. Found one step at a time with probe_step.py.",
+  "vars": {
+    "chrome": "Google Chrome"
+  },
+  "steps": [
+    {
+      "do": "sleep",
+      "s": 1.0
+    },
+    {
+      "do": "click_xy",
+      "window": "${chrome}",
+      "x": 1511,
+      "y": 327,
+      "note": "index: Keyboard Shortcuts"
+    },
+    {
+      "do": "sleep",
+      "s": 4.0
+    },
+    {
+      "do": "click_xy",
+      "window": "${chrome}",
+      "x": 1502,
+      "y": 352,
+      "note": "index: Edge Loops"
+    },
+    {
+      "do": "sleep",
+      "s": 4.0
+    },
+    {
+      "do": "click_xy",
+      "window": "${chrome}",
+      "x": 628,
+      "y": 587,
+      "note": "link: Loop Cut and Slide"
+    },
+    {
+      "do": "wait",
+      "window": "Loop Cut and Slide",
+      "timeout": 20,
+      "note": "the new page is there"
+    },
+    {
+      "do": "sleep",
+      "s": 5.0
+    },
+    {
+      "do": "click_xy",
+      "window": "${chrome}",
+      "x": 1472,
+      "y": 203,
+      "note": "index: Options"
+    },
+    {
+      "do": "sleep",
+      "s": 3.0
+    }
+  ]
+}
