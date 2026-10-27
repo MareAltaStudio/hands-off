@@ -1085,6 +1085,20 @@ def move(window: str, monitor: int = 2, corner: str = "top-left") -> str:
     return _acting("move", h, work)
 
 
+def _document_command(path: str, arguments: str) -> str:
+    """The command line that opens a document with the program associated to it, so that program
+    can be created by WMI directly. `cmd /c start` goes through the shell, which activates what it
+    starts (measured 27/10/2026: Notepad took the focus that way). Packaged apps live under
+    WindowsApps, where the exe can't be started by path: use its execution alias (its file name)."""
+    try:
+        exe = win32api.FindExecutable(path)[1]
+    except Exception:  # noqa: BLE001 - no classic association (some modern apps)
+        return f'cmd.exe /c start "" "{path}" {arguments}'.strip()
+    if "\\windowsapps\\" in exe.lower():
+        exe = os.path.basename(exe)
+    return f'"{exe}" "{path}" {arguments}'.strip()
+
+
 def _spawn_without_focus(command_line: str, cwd: str | None, show: int = 4) -> int | None:
     """Create the process through WMI (Win32_Process.Create). A process started by the program in
     front inherits the right to take the foreground, and most programs use it on their first
@@ -1130,8 +1144,9 @@ def launch(command: str, arguments: str = "", monitor: int = 0, corner: str = "t
     try:
         if os.path.isfile(command) and not command.lower().endswith((".exe", ".bat", ".cmd", ".com")):
             # a document: let its program open it, through a hidden cmd that WMI starts
-            if _spawn_without_focus(f'cmd.exe /c start "" "{command}" {arguments}'.strip(),
-                                    os.path.dirname(command) or None, show=0) is None:
+            line = _document_command(command, arguments)
+            if _spawn_without_focus(line, os.path.dirname(command) or None,
+                                    show=0 if line.startswith("cmd.exe") else 4) is None:
                 os.startfile(command)
             pid = None  # the document's program is a grandchild: matched by its new window
         else:
