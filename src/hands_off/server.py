@@ -462,6 +462,7 @@ def _focus_hwnd(top: int) -> int:
 _VK = {"enter": 0x0D, "tab": 0x09, "esc": 0x1B, "space": 0x20,
        "backspace": 0x08, "delete": 0x2E, "del": 0x2E, "up": 0x26, "down": 0x28,
        "left": 0x25, "right": 0x27, "home": 0x24, "end": 0x23, "pgup": 0x21, "pgdn": 0x22,
+       "pageup": 0x21, "pagedown": 0x22, "insert": 0x2D, "ins": 0x2D,
        "ctrl": 0x11, "shift": 0x10, "alt": 0x12, "win": 0x5B,
        **{f"f{i}": 0x6F + i for i in range(1, 13)}}
 
@@ -1023,6 +1024,7 @@ def launch(command: str, arguments: str = "", monitor: int = 0, corner: str = "t
     command line. `monitor` > 0 moves the new window there (e.g. 2, to keep
     it off the user's screen), at `corner` as in move(). If the program grabs
     the focus while opening, the guard gives it back."""
+    command, arguments = os.path.expandvars(command), os.path.expandvars(arguments)  # %LOCALAPPDATA% etc.
     before = {w["hwnd"] for w in _top_windows()}
     fg = user32.GetForegroundWindow()
     si = subprocess.STARTUPINFO()
@@ -1035,6 +1037,11 @@ def launch(command: str, arguments: str = "", monitor: int = 0, corner: str = "t
         else:
             line = f'"{command}" {arguments}'.strip() if " " in command else f"{command} {arguments}".strip()
             pid = subprocess.Popen(line, startupinfo=si, cwd=os.path.dirname(command) or None).pid
+    except OSError as exc:
+        if getattr(exc, "winerror", None) == 740:
+            return (f"[error] {command!r} needs administrator rights (UAC). hands-off never clicks the UAC "
+                    "prompt: start it from an elevated shell, or ask the user.")
+        return f"[error] could not start {command!r}: {exc!r}"
     except Exception as exc:  # noqa: BLE001
         return f"[error] could not start {command!r}: {exc!r}"
     deadline = time.time() + float(wait_s)

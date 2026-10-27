@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- `keys` accepts `pageup`, `pagedown` and `insert`/`ins` (agents reached for those names and got an error).
+- `launch` expands `%VARIABLES%` in the command and arguments.
+- `launch` says plainly when a program needs administrator rights (UAC) instead of a raw `OSError 740`.
+
+### Documentation
+- Measured focus behaviour on `launch` (docs/compatibility.md#focus-on-launch); the README no longer implies
+  the guard always wins there.
+- Typing into a web page: wait before judging with `capture`.
+
 ## [0.1.0] - 2026-10-18
 
 ### Added

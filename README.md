@@ -36,7 +36,7 @@ Desktop automation for agents usually works through synthetic input: `SendInput`
 | Needs the window in front | yes | **no** — covered, on another monitor, all fine |
 | Finds controls by | pixel coordinates | **name, type, AutomationId** |
 | Knows if it worked | no | **says which layer acted; `read`/`capture` to check** |
-| Steals focus | yes | **gives it back** when an app grabs it (11–79 ms measured) |
+| Steals focus | yes | **gives it back** when an app grabs it during an action (11–79 ms measured); `launch` is best effort, see [compatibility](docs/compatibility.md#focus-on-launch) |
 
 It works in layers, and every answer names the one that did the job:
 
