@@ -1085,6 +1085,35 @@ def move(window: str, monitor: int = 2, corner: str = "top-left") -> str:
     return _acting("move", h, work)
 
 
+def _spawn_without_focus(command_line: str, cwd: str | None, show: int = 4) -> int | None:
+    """Create the process through WMI (Win32_Process.Create). A process started by the program in
+    front inherits the right to take the foreground, and most programs use it on their first
+    window; one created by WMI is a child of WmiPrvSE, which has no such right. Measured with a
+    person using the PC (27/10/2026, Character Map, Notepad, Calculator, Chrome): a plain child took
+    the focus 12 times in 20, WMI 2 in 18 (both Calculator, a UWP app the system activates itself).
+    The new process gets the user's default environment, not the server's. Returns the pid, or
+    None when WMI refuses (the caller falls back to a plain child)."""
+    try:
+        import pythoncom
+        import win32com.client
+        pythoncom.CoInitialize()
+        wmi = win32com.client.GetObject(r"winmgmts:\\.\root\cimv2")
+        startup = wmi.Get("Win32_ProcessStartup").SpawnInstance_()
+        startup.ShowWindow = show  # 4 = SW_SHOWNOACTIVATE, 0 = hidden
+        proc = wmi.Get("Win32_Process")
+        # Win32_Process.Create can't be called directly through late binding ("'int' is not
+        # callable"): fill the method's in-parameters and run ExecMethod_
+        args = proc.Methods_("Create").InParameters.SpawnInstance_()
+        args.CommandLine = command_line
+        if cwd:
+            args.CurrentDirectory = cwd
+        args.ProcessStartupInformation = startup
+        out = proc.ExecMethod_("Create", args)
+        return int(out.ProcessId) if out.ReturnValue == 0 else None
+    except Exception:  # noqa: BLE001 - any failure falls back to a plain child
+        return None
+
+
 def launch(command: str, arguments: str = "", monitor: int = 0, corner: str = "top-left",
            wait_s: float = 15.0) -> str:
     """Start a program (or open a file) without stealing focus. Returns the
@@ -1099,12 +1128,18 @@ def launch(command: str, arguments: str = "", monitor: int = 0, corner: str = "t
     si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     si.wShowWindow = 4  # SW_SHOWNOACTIVATE
     try:
-        if os.path.isfile(command) and not command.lower().endswith((".exe", ".bat", ".cmd")):
-            os.startfile(command)  # a document: let its program open it
-            pid = None
+        if os.path.isfile(command) and not command.lower().endswith((".exe", ".bat", ".cmd", ".com")):
+            # a document: let its program open it, through a hidden cmd that WMI starts
+            if _spawn_without_focus(f'cmd.exe /c start "" "{command}" {arguments}'.strip(),
+                                    os.path.dirname(command) or None, show=0) is None:
+                os.startfile(command)
+            pid = None  # the document's program is a grandchild: matched by its new window
         else:
             line = f'"{command}" {arguments}'.strip() if " " in command else f"{command} {arguments}".strip()
-            pid = subprocess.Popen(line, startupinfo=si, cwd=os.path.dirname(command) or None).pid
+            cwd = os.path.dirname(command) or None
+            pid = _spawn_without_focus(line, cwd)
+            if pid is None:
+                pid = subprocess.Popen(line, startupinfo=si, cwd=cwd).pid
     except OSError as exc:
         if getattr(exc, "winerror", None) == 740:
             return (f"[error] {command!r} needs administrator rights (UAC). hands-off never clicks the UAC "

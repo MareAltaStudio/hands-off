@@ -4,7 +4,7 @@ Puts Paint in front on monitor 1 (with a real click, like a user), then launches
 program on monitor 2 and samples the foreground window for a few seconds. Run only
 when nobody is using the PC.
 
-    python launch_focus_test.py            # launch() as it is
+    python launch_focus_test.py            # launch() as it is (WMI since 0.1.1)
     python launch_focus_test.py --popen    # the old plain child process, for comparison
 """
 

@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- `launch` creates the process through WMI (`Win32_Process.Create`), so it doesn't inherit the right to take the
+  foreground from the program in front. With a person using the PC: 12 of 20 launches took the focus before, 2 of
+  18 after (both Calculator, a UWP app). Falls back to a plain child process if WMI refuses. The new process gets
+  the user's default environment.
+
 ### Fixed
 - `id=` targets shared by a Win32 wrapper chain (the Open/Save dialog's `id=1148` is the ComboBoxEx, its ComboBox
   and the Edit) now pick the deepest control that can act, instead of the wrapper, where typed text was lost.

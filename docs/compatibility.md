@@ -15,8 +15,21 @@ Measured on Windows 11 25H2 (build 26200). Every row was driven with the user's 
 
 During actions the target can't take the focus at all (see
 [how it works](how-it-works.md#keeping-the-focus-where-it-is)). Programs that are *starting* are harder, because
-Windows lets a new process take the foreground and can refuse to hand it back. Measured over 13 days of daily use,
-before 0.1.1:
+Windows lets a process take the foreground when the program in front started it, and the MCP server is a child of
+your editor. Since 0.1.1, `launch` creates the process through WMI (`Win32_Process.Create`), whose parent has no such
+right. Measured with a person using the PC, alternating both ways on Character Map, Notepad, Calculator and Chrome
+(`demo/launch_wmi_ab.py`, no focus guard in either, so this is the raw steal):
+
+| How the program was started | Took the user's focus |
+|---|---|
+| plain child of the server (before 0.1.1) | 12 of 20 |
+| through WMI (0.1.1) | 2 of 18, both Calculator |
+
+UWP apps like Calculator are activated by the system itself, so WMI doesn't help them; the focus guard still
+watches `launch` and hands the focus back when it can. A program started through WMI gets your default
+environment variables, not the server's.
+
+Before 0.1.1, over 13 days of daily use:
 
 | Program | Launches | Focus kept by the new program |
 |---|---|---|
@@ -25,8 +38,7 @@ before 0.1.1:
 | Chromium-based browser | 14 | 8 |
 | Photoshop | 7 | 5 |
 
-`launch` reports it every time (`could NOT give it back`), so the agent can warn you. Launching programs ahead of
-time, before you start working, avoids it.
+`launch` reports it every time it happens (`could NOT give it back`), so the agent can warn you.
 
 ## Requirements
 

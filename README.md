@@ -38,7 +38,7 @@ Desktop automation for agents usually works through synthetic input: `SendInput`
 | Needs the window in front | yes | **no** — covered, on another monitor, all fine |
 | Finds controls by | pixel coordinates | **name, type, AutomationId** |
 | Knows if it worked | no | **says which layer acted; `read`/`capture` to check** |
-| Steals focus | yes | **no**: the target can't activate while it acts (0 samples off the user's window, measured); `launch` is best effort, see [compatibility](docs/compatibility.md#focus-on-launch) |
+| Steals focus | yes | **no**: the target can't activate while it acts (0 samples off the user's window, measured); `launch` starts programs through WMI so they rarely can either (2 in 18 vs 12 in 20, [measured](docs/compatibility.md#focus-on-launch)) |
 
 It works in layers, and every answer names the one that did the job:
 
