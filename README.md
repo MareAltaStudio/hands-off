@@ -17,11 +17,9 @@ An MCP server that clicks buttons, fills in fields, picks menu items and reads t
 
 </div>
 
-<p align="center">
-  <img src="docs/media/demo.gif" alt="Left: a script orbits a Blender scene with the real cursor. Right: Claude, through hands-off, clicks through the Blender manual in a browser on the other monitor. The focus stays on Blender the whole time." width="960">
-</p>
+https://github.com/user-attachments/assets/3aa1dccc-feae-4658-9c40-f2c961ae54db
 
-<p align="center"><sub>One take, no cuts. The left side is a script moving the real cursor. Full video with narration in the <a href="https://github.com/MareAltaStudio/hands-off/releases/tag/v0.1.0">v0.1.0 release</a>; how it was made: <a href="demo/README.md">demo/</a>.</sub></p>
+<p align="center"><sub>One take, no cuts, with sound. The left side is a script moving the real cursor; on the right, Claude drives a browser through hands-off. How it was made: <a href="demo/README.md">demo/</a> · silent version: <a href="docs/media/demo.gif">GIF</a>.</sub></p>
 
 ---
 
