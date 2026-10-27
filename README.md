@@ -36,7 +36,7 @@ Desktop automation for agents usually works through synthetic input: `SendInput`
 | Needs the window in front | yes | **no** — covered, on another monitor, all fine |
 | Finds controls by | pixel coordinates | **name, type, AutomationId** |
 | Knows if it worked | no | **says which layer acted; `read`/`capture` to check** |
-| Steals focus | yes | **gives it back** when an app grabs it during an action (11–79 ms measured); `launch` is best effort, see [compatibility](docs/compatibility.md#focus-on-launch) |
+| Steals focus | yes | **no**: the target can't activate while it acts (0 samples off the user's window, measured); `launch` is best effort, see [compatibility](docs/compatibility.md#focus-on-launch) |
 
 It works in layers, and every answer names the one that did the job:
 
@@ -149,7 +149,7 @@ the agent act, the skill keeps it from guessing.
 | | |
 |---|---|
 | ✅ Win32 / MFC | full tree, menus, fields, buttons |
-| ✅ WinUI, UWP | fields, buttons, menus; the focus guard handles their focus grabs |
+| ✅ WinUI, UWP | fields, buttons, menus; `WS_EX_NOACTIVATE` keeps them from taking the focus |
 | ✅ Chrome, Edge, Electron | browser UI through the tree; page content through `click_xy` (arrives as a trusted click) |
 | 🟡 Custom-drawn UIs (Godot, PureRef) | `capture` only |
 | ❌ Games, the Photoshop canvas, the Blender viewport | they read the physical mouse — use the program's API |

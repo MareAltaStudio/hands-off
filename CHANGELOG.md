@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Acting tools no longer let the target take the focus. The target's window carries `WS_EX_NOACTIVATE` for the length
+  of the action (`HANDS_OFF_NOACTIVATE=0` turns it off). Calculator, six presses: 35 of 147 samples off the user's
+  window before, 0 of 146 after.
+- On classic Win32 controls, messages go before UIA, because several UIA patterns focus the control: `WM_SETTEXT` on
+  edit boxes, `BM_CLICK` on buttons and checkboxes (`toggle` too), `TCM_SETCURFOCUS` on tabs. Mouse Properties and
+  Character Map, 26 s: 114 of 289 samples off the user's window before, 0 of 290 after.
+
 ### Fixed
 - `keys` accepts `pageup`, `pagedown` and `insert`/`ins` (agents reached for those names and got an error).
 - `launch` expands `%VARIABLES%` in the command and arguments.

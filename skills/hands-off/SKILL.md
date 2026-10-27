@@ -82,10 +82,11 @@ Example: [`recipes/calculator_add.json`](../../recipes/calculator_add.json).
 | Games, the Photoshop canvas, the Blender viewport | **no**: they read the real mouse. Use layer 1 |
 
 ## The traps (measured)
-- **WinUI/UWP apps take the focus on every action.** The guard watches the foreground for 0.9 s and hands focus back
-  to the window the user was in: 11-79 ms per button in Calculator, about 0.6 s on Notepad's File > Save. It only
-  pulls focus back when the TARGET program took it, so it never fights the user switching windows. If the answer
-  says `could NOT give it back`, tell the user (the message says who has the focus now).
+- **WinUI/UWP apps try to take the focus on every action.** While an action runs, the target's window carries
+  `WS_EX_NOACTIVATE`, so it can't (Calculator: 0 of 146 samples off the user's window). On classic Win32 controls
+  messages go first, because UIA `Value`/`Select`/`Toggle` focus the control. The guard still watches the foreground
+  for 0.9 s as a backstop and only pulls focus back when the TARGET program took it. If an answer says
+  `could NOT give it back`, tell the user (the message says who has the focus now).
 - The foreground passes through "no window" during the switch: checking on the very next line gives a false
   "failed". That is why the guard retries every 30 ms instead of checking once.
 - **Capture**: PrintWindow **with** `PW_RENDERFULLCONTENT` takes covered windows, GPU-rendered ones included. The

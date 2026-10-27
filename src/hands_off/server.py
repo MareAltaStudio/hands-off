@@ -70,6 +70,8 @@ LOG = Path(os.environ.get("HANDS_OFF_LOG")
            or Path(os.environ.get("LOCALAPPDATA", Path.home())) / "hands-off" / "actions.log")
 TIMEOUT = 30.0       # one tool call, worst case
 INVOKE_WAIT = 4.0    # after this, an Invoke is "pending" (modal dialog), not failed
+WS_EX_NOACTIVATE = 0x08000000
+TCM_GETCURSEL, TCM_SETCURFOCUS = 0x130B, 0x1330
 MAX_NODES = 4000     # tree walk ceiling - Chrome/Electron trees are enormous
 
 PW_RENDERFULLCONTENT = 2
@@ -245,11 +247,30 @@ def _guard_focus(prev: int, target_pids: set[int], watch_s: float = 0.9) -> str:
     return "the program took the focus for a moment; given back"
 
 
+def _no_activate(h: int):
+    """Mark the target's top-level window WS_EX_NOACTIVATE for the duration of
+    an action, so the activation that a UIA call can trigger has nowhere to go.
+    Returns the old style to restore, or None if nothing was changed."""
+    if os.environ.get("HANDS_OFF_NOACTIVATE", "1") == "0":
+        return None
+    top = user32.GetAncestor(h, 2) or h  # GA_ROOT
+    old = user32.GetWindowLongW(top, win32con.GWL_EXSTYLE)
+    if old & WS_EX_NOACTIVATE:
+        return None
+    user32.SetWindowLongW(top, win32con.GWL_EXSTYLE, old | WS_EX_NOACTIVATE)
+    return top, old
+
+
 def _acting(name: str, h: int, fn) -> str:
     """Run an acting tool on the worker with the focus guard and the log."""
     fg = user32.GetForegroundWindow()
     pids = {_pid_of(h)}
-    out = _on_worker(fn)
+    mark = _no_activate(h) if pids != {_pid_of(fg)} else None
+    try:
+        out = _on_worker(fn)
+    finally:
+        if mark:
+            user32.SetWindowLongW(mark[0], win32con.GWL_EXSTYLE, mark[1])
     if pids != {_pid_of(fg)}:  # if the user is IN that program, there is nothing to guard
         g = _guard_focus(fg, pids)
         if g:
@@ -725,6 +746,25 @@ def _invoke_bounded(c) -> str:
     return "ok"
 
 
+def _win32_tab(item) -> str | None:
+    """Select a tab of a Win32 tab control (SysTabControl32) by message.
+    TCM_SETCURFOCUS, unlike TCM_SETCURSEL, sends the parent the selection
+    notifications, so a property sheet really switches its page. Returns
+    "ok", or None when the tab isn't a Win32 one (the caller falls back to UIA)."""
+    try:
+        parent = item.GetParentControl()
+        nh = parent.NativeWindowHandle if parent else 0
+        if not nh or win32gui.GetClassName(nh) != "SysTabControl32":
+            return None
+        tabs = [x for x in parent.GetChildren() if x.ControlTypeName == "TabItemControl"]
+        index = next(i for i, x in enumerate(tabs) if x.Name == item.Name)
+    except Exception:  # noqa: BLE001
+        return None
+    res = W.DWORD()
+    user32.SendMessageTimeoutW(nh, TCM_SETCURFOCUS, index, 0, SMTO_ABORTIFHUNG, 3000, ctypes.byref(res))
+    return "ok"
+
+
 def invoke(window: str, target: str, action: str = "click") -> str:
     """Press a control WITHOUT the mouse: button, menu item, tab, checkbox,
     list item. `target` = '#path' (from tree), 'Type:Name' (e.g.
@@ -742,6 +782,15 @@ def invoke(window: str, target: str, action: str = "click") -> str:
         what = _describe(path, c)
         tail = f" ({note})" if note else ""
         a = action.lower()
+        nh = c.NativeWindowHandle
+        if a in ("toggle", "click") and nh and win32gui.GetClassName(nh).lower() == "button":
+            # BM_CLICK presses a Win32 button or checkbox without focusing it
+            user32.PostMessageW(nh, win32con.BM_CLICK, 0, 0)
+            return f"{'toggled' if a == 'toggle' else 'clicked'} (BM_CLICK message): {what}{tail}"
+        if a in ("select", "click") and c.ControlTypeName == "TabItemControl":
+            tab = _win32_tab(c)
+            if tab:
+                return f"selected (TCM_SETCURFOCUS message): {what}{tail}" if tab == "ok" else tab
         try:
             if a == "toggle" and c.GetTogglePattern():
                 c.GetTogglePattern().Toggle(waitTime=0)
@@ -754,10 +803,6 @@ def invoke(window: str, target: str, action: str = "click") -> str:
                 (p.Expand if a == "expand" else p.Collapse)(waitTime=0)
                 return f"{a}ed (UIA ExpandCollapse): {what}{tail}"
             if a == "click":
-                nh = c.NativeWindowHandle
-                if nh and win32gui.GetClassName(nh).lower() == "button":
-                    user32.PostMessageW(nh, win32con.BM_CLICK, 0, 0)
-                    return f"clicked (BM_CLICK message): {what}{tail}"
                 if c.GetInvokePattern():
                     if _invoke_bounded(c) == "pending":
                         return (f"invoked (UIA Invoke), and the program has not answered yet - "
@@ -806,6 +851,16 @@ def type_text(window: str, target: str, text: str, enter: bool = False) -> str:
             if c is None:
                 return f"[error] {note}"
             what = _describe(path, c)
+            nh = c.NativeWindowHandle
+            if nh and "edit" in win32gui.GetClassName(nh).lower():
+                # A classic edit box takes WM_SETTEXT without being focused; UIA
+                # SetValue focuses the control first, which activates its window.
+                res = W.DWORD()
+                user32.SendMessageTimeoutW(nh, win32con.WM_SETTEXT, 0, ctypes.c_wchar_p(text),
+                                           SMTO_ABORTIFHUNG, 3000, ctypes.byref(res))
+                if enter:
+                    _post_keys(nh, "enter")
+                return f"written (WM_SETTEXT{' + Enter' if enter else ''}): {what}"
             try:
                 vp = c.GetValuePattern()
                 if vp and not vp.IsReadOnly:

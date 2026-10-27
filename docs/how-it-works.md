@@ -10,7 +10,7 @@ Every acting tool tries the layers in order and its answer names the one that di
 | Layer | Mechanism | Needs the window in front? | Moves the cursor? |
 |---|---|---|---|
 | 1. UI Automation | `Invoke`, `Toggle`, `Value`, `ExpandCollapse`, `SelectionItem`, `LegacyIAccessible` patterns | no | no |
-| 2. Window messages | `BM_CLICK`, `WM_SETTEXT`, `WM_COMMAND`, `WM_LBUTTONDOWN/UP`, `WM_KEYDOWN/UP`, `WM_CHAR` posted to the window | no | no |
+| 2. Window messages | `BM_CLICK`, `WM_SETTEXT`, `WM_COMMAND`, `TCM_SETCURFOCUS`, `WM_LBUTTONDOWN/UP`, `WM_KEYDOWN/UP`, `WM_CHAR` posted to the window | no | no |
 | 3. — | nothing; the answer says the program needs its own API | — | — |
 
 There is deliberately no third layer that falls back to synthetic input. A tool that "sometimes" grabs your mouse is
@@ -22,6 +22,15 @@ UIA finds controls by **name, type and AutomationId**, so a target like `Button:
 window being resized, moved to another monitor or covered by other windows. Its patterns are the program's own
 accessibility contract, the same one a screen reader uses, so the program handles the action exactly as if a user
 had done it.
+
+### When messages go first
+
+On classic Win32 controls, a message does the job **without focusing anything**, while several UIA patterns focus the
+control first and so activate its window (`Value.SetValue`, `SelectionItem.Select` on a tab, `Toggle` on a
+checkbox). So a native edit box gets `WM_SETTEXT`, a native button or checkbox gets `BM_CLICK`, and a tab of a
+`SysTabControl32` gets `TCM_SETCURFOCUS` (unlike `TCM_SETCURSEL`, it notifies the parent, so a property sheet really
+switches its page). Measured on Mouse Properties and Character Map: with UIA, the focus left the user's window in 114
+of 289 samples (every 100 ms) during a 26-second run; with messages first, 0 of 290.
 
 ### When messages take over
 
@@ -37,10 +46,20 @@ Chrome, Edge and Electron draw the page into a child window named `Intermediate 
 input posted there is dropped. hands-off skips it and posts to the render widget above it, where the click arrives as
 a trusted event (`isTrusted: true`).
 
-## The focus guard
+## Keeping the focus where it is
 
-WinUI and UWP apps take the foreground whenever one of their buttons is pressed, even through UIA. Without a guard,
-the user's next keystroke would land in the wrong program.
+WinUI and UWP apps take the foreground whenever one of their buttons is pressed, even through UIA. Without help, the
+user's next keystroke would land in the wrong program. Two things prevent it.
+
+### The target can't activate during the action
+
+For the length of each acting call, the target's top-level window carries `WS_EX_NOACTIVATE`; the original style is
+restored right after, even if the action fails. The program still receives the action, but its window has no way to
+become the foreground. Measured on Calculator (UWP), six button presses while a user drew in another window: without
+the flag the focus left the user's window in 35 of 147 samples; with it, 0 of 146, and the guard below never had to
+act. `HANDS_OFF_NOACTIVATE=0` turns it off.
+
+### The guard
 
 After every acting tool hands-off:
 
@@ -54,7 +73,7 @@ After every acting tool hands-off:
 It only undoes a steal by the target program. If the user switches windows themselves during that time, their choice
 stands.
 
-Measured: 11–79 ms per button press in Calculator; about 0.6 s on Notepad's *File > Save*.
+Measured before `WS_EX_NOACTIVATE`: 11–79 ms per button press in Calculator; about 0.6 s on Notepad's *File > Save*.
 
 ## Capture
 
