@@ -386,10 +386,23 @@ def _find(root, target: str):
     want = target
     if target.lower().startswith("id="):
         want_id = target[3:].strip()
-        for path, _, c in _walk(root, 60):
-            if (c.AutomationId or "") == want_id:
-                return path, c, ""
-        return None, None, f"no element with id={want_id!r}"
+        hits = [(path, c) for path, _, c in _walk(root, 60) if (c.AutomationId or "") == want_id]
+        if not hits:
+            return None, None, f"no element with id={want_id!r}"
+        if len(hits) == 1:
+            return hits[0][0], hits[0][1], ""
+        # A Win32 control id is shared down a wrapper chain: in the Save/Open dialog, id=1148 is the
+        # ComboBoxEx, its ComboBox and the Edit inside. The first one (the wrapper) has no pattern and
+        # text sent to it is lost, so take the deepest one that can be acted on.
+        def rank(pc):
+            path, c = pc
+            try:
+                ok = c.IsEnabled and not c.IsOffscreen
+            except Exception:  # noqa: BLE001
+                ok = False
+            return (ok, bool(_patterns(c)), path.count("."))
+        path, c = max(hits, key=rank)
+        return path, c, f"{len(hits)} elements share id={want_id}; used the deepest that can act"
     m = re.match(r"^([A-Za-z]+):(.*)$", target)
     if m:
         kind, want = m.group(1).lower(), m.group(2).strip()

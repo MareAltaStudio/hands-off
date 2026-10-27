@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- `id=` targets shared by a Win32 wrapper chain (the Open/Save dialog's `id=1148` is the ComboBoxEx, its ComboBox
+  and the Edit) now pick the deepest control that can act, instead of the wrapper, where typed text was lost.
+
 ## [0.1.0] - 2026-10-27
 
 First public release.
