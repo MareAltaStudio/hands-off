@@ -8,8 +8,20 @@ description: Drive Windows programs without touching the user's mouse, keyboard 
 The user keeps working while you operate their programs. Their cursor, their keyboard and the window they are typing
 in are not yours. The server's docstring (`hands_off/server.py`) explains why each decision was made.
 
-The tools show up as `mcp__hands-off__*` once the server is registered (`claude mcp add -s user hands-off -- uvx hands-off-mcp`).
-If they don't: `claude mcp get hands-off`.
+## Setup
+This skill needs the `hands-off` MCP server, free and open source (MIT): https://github.com/MareAltaStudio/hands-off.
+Windows 10/11 only, with [uv](https://docs.astral.sh/uv/) installed. Register it once:
+
+```
+claude mcp add -s user hands-off -- uvx --from git+https://github.com/MareAltaStudio/hands-off hands-off-mcp
+```
+
+Check the install with `uvx --from git+https://github.com/MareAltaStudio/hands-off hands-off-mcp --selftest`.
+Other agents (Cursor, Copilot...): same command in their MCP config (see the README). The tools then show up as
+`mcp__hands-off__*`; if they don't: `claude mcp get hands-off`.
+
+Network: installing downloads the server from GitHub (and its Python packages from PyPI). After that it runs locally
+and makes no network calls; it only acts on the windows you name.
 
 ## Order of choice (always)
 1. **The program's own API**: bpy (Blender), UXP/ExtendScript (Photoshop), CDP (Chrome/Electron), COM (Office),
