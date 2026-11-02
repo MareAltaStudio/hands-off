@@ -1134,7 +1134,12 @@ def launch(command: str, arguments: str = "", monitor: int = 0, corner: str = "t
     new window's number. `command` = exe or path; `arguments` as on the
     command line. `monitor` > 0 moves the new window there (e.g. 2, to keep
     it off the user's screen), at `corner` as in move(). If the program grabs
-    the focus while opening, the guard gives it back."""
+    the focus while opening, the guard gives it back.
+    A program that opens a CONSOLE before its main window (Blender): this
+    positions the console and the main window is born on the primary
+    monitor (measured 6/6). Pass the position in the program's own arguments
+    (Blender: --no-window-focus --window-geometry <x> <y> <w> <h>) and check
+    with list_windows() where the main window was born."""
     command, arguments = os.path.expandvars(command), os.path.expandvars(arguments)  # %LOCALAPPDATA% etc.
     before = {w["hwnd"] for w in _top_windows()}
     fg = user32.GetForegroundWindow()

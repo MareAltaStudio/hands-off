@@ -94,6 +94,10 @@ Example: [`recipes/calculator_add.json`](../../recipes/calculator_add.json).
 | Games, the Photoshop canvas, the Blender viewport | **no**: they read the real mouse. Use layer 1 |
 
 ## The traps (measured)
+- **Blender opens a console first.** `launch` positions the first window that shows up, which is the console; the
+  main window is then born on the primary monitor and takes the focus (6 of 6 launches). Moving it afterwards is not
+  the fix: pass Blender's own arguments, `--no-window-focus --window-geometry <x> <y> <w> <h> "<file.blend>"` (measured:
+  born on the second monitor, focus given back), and check with `list_windows` where the main window was born.
 - **WinUI/UWP apps try to take the focus on every action.** While an action runs, the target's window carries
   `WS_EX_NOACTIVATE`, so it can't (Calculator: 0 of 146 samples off the user's window). On classic Win32 controls
   messages go first, because UIA `Value`/`Select`/`Toggle` focus the control. The guard still watches the foreground
