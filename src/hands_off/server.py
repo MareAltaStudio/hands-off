@@ -874,15 +874,23 @@ def type_text(window: str, target: str, text: str, enter: bool = False) -> str:
                 if enter:
                     _post_keys(nh, "enter")
                 return f"written (WM_SETTEXT{' + Enter' if enter else ''}): {what}"
+            written_uia = False
             try:
                 vp = c.GetValuePattern()
                 if vp and not vp.IsReadOnly:
                     vp.SetValue(text, waitTime=0)
-                    if enter:
-                        _post_keys(c.NativeWindowHandle or _focus_hwnd(h), "enter")
-                    return f"written (UIA Value{' + Enter by message' if enter else ''}): {what}"
+                    written_uia = True
             except Exception:  # noqa: BLE001
-                pass
+                pass                      # SetValue failed: fall through to the window-message path below
+            if written_uia:
+                # The text is already there: Enter stays outside the try, so a failure in it can never
+                # fall through to the path below and type the text a second time.
+                if enter:
+                    try:
+                        _post_keys(c.NativeWindowHandle or _focus_hwnd(h), "enter")
+                    except Exception as ee:  # noqa: BLE001
+                        return f"written (UIA Value), but Enter failed: {ee}: {what}"
+                return f"written (UIA Value{' + Enter by message' if enter else ''}): {what}"
             target_hwnd = c.NativeWindowHandle
         target_hwnd = target_hwnd or _focus_hwnd(h)
         cls = win32gui.GetClassName(target_hwnd).lower()
