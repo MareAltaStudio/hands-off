@@ -124,6 +124,10 @@ Example: [`recipes/calculator_add.json`](../../recipes/calculator_add.json).
   trust the mark; check with `capture`.
 - **ctrl/alt shortcuts through `keys` fail in many programs**, because they read the real keyboard state. Prefer
   `menu` or `invoke` on the button.
+  **Worse in Electron/VS Code apps (Chrome_WidgetWin_1), measured 2026-11-12:** `keys(..., "ctrl+shift+p")` did not
+  open the command palette and sent only the letter **"p"** to the focused field, which was the chat box of another
+  open conversation. Never send letter keys or shortcuts to an IDE window where the user has chats open: the text
+  lands in the chat. IDE commands are done by the user, or through the IDE's own API/CLI.
 - `invoke` on a button that opens a modal dialog may never return. It runs on a thread with a 4 s limit and answers
   "pending": the dialog is open, look at `list_windows()` and treat the dialog as another window.
 - All UIA work runs on a single thread (COM MTA). One hung call makes the next ones wait up to 30 s.
